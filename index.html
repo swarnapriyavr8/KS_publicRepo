@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Genius Challenge - Azure RAG Deployment</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #0a0b0d;
+            --secondary-bg: #1a1b1e;
+            --accent-bg: #2a2d30;
+            --border-color: #3a3d40;
+            --text-primary: #ffffff;
+            --text-secondary: #b4b4b4;
+            --text-accent: #00d2ff;
+            --success-color: #00ff88;
+            --error-color: #ff4757;
+            --warning-color: #ffa502;
+            --azure-blue: #0078d4;
+            --glow-blue: #00d2ff;
+            --glow-purple: #8b5cf6;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background grid */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            z-index: 1;
+            background-image:
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--glow-blue);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--glow-blue);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translateY(-100px) rotate(180deg);
+                opacity: 1;
+            }
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--accent-bg) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .challenge-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--glow-blue), var(--glow-purple));
+            color: var(--primary-bg);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--text-primary), var(--glow-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from {
+                filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.3));
+            }
+
+            to {
+                filter: drop-shadow(0 0 30px rgba(0, 210, 255, 0.6));
+            }
+        }
+
+        .subtitle {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        .deployment-status {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-success {
+            background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1));
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .status-error {
+            background: linear-gradient(45deg, rgba(255, 71, 87, 0.2), rgba(255, 71, 87, 0.1));
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .status-icon {
+            font-size: 1.5rem;
+            animation: rotate 2s linear infinite;
+        }
+
+        .status-success .status-icon {
+            animation: checkmark 0.6s ease-in-out;
+        }
+
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .configs-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .config-card {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .config-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--glow-blue);
+            box-shadow: 0 10px 20px rgba(0, 210, 255, 0.1);
+        }
+
+        .config-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .config-card:hover::before {
+            left: 100%;
+        }
+
+        .config-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .config-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .azure-icon {
+            background: linear-gradient(45deg, var(--azure-blue), #40e0d0);
+            color: white;
+        }
+
+        .search-icon {
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            color: white;
+        }
+
+        .ai-icon {
+            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+            color: white;
+        }
+
+        .config-name {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .config-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .config-status.success {
+            color: var(--success-color);
+        }
+
+        .config-status.error {
+            color: var(--error-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .success .status-dot {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        .error .status-dot {
+            background: var(--error-color);
+            box-shadow: 0 0 10px var(--error-color);
+        }
+
+        @keyframes statusPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
+        }
+
+        .action-section {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .api-info {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .test-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, var(--glow-blue), var(--glow-purple));
+            color: var(--primary-bg);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .test-button:hover::before {
+            left: 100%;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 210, 255, 0.3);
+        }
+
+        .test-button:active {
+            transform: translateY(0);
+        }
+
+        /* Success animation effects */
+        .success-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: firework 2s ease-out forwards;
+        }
+
+        @keyframes firework {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Terminal-style typing effect */
+        .typing-effect::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .title {
+                font-size: 2.2rem;
+            }
+
+            .config-card {
+                padding: 15px;
+            }
+
+            .config-name {
+                font-size: 0.85rem;
+            }
+        }
+
+        font-weight: 600;
+        }
+
+        .config-status.error {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            color: #7f8c8d;
+        }
+
+        .api-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .api-link:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            top: -10px;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #f39c12;
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        .confetti-piece:nth-child(odd) {
+            background: #e74c3c;
+            width: 8px;
+            height: 8px;
+            animation-duration: 2.5s;
+        }
+
+        .confetti-piece:nth-child(even) {
+            background: #3498db;
+            width: 6px;
+            height: 6px;
+            animation-duration: 3.5s;
+        }
+
+        .confetti-piece:nth-child(3n) {
+            background: #2ecc71;
+        }
+
+        .confetti-piece:nth-child(4n) {
+            background: #9b59b6;
+        }
+
+        .confetti-piece:nth-child(5n) {
+            background: #f1c40f;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated background -->
+    <div class="bg-grid"></div>
+    <div class="particles" id="particles"></div>
+
+    {% if all_configured %}
+    <div class="success-animation" id="successAnimation"></div>
+    {% endif %}
+
+    <div class="main-container">
+        <div class="dashboard">
+            <div class="header">
+                <div class="challenge-badge">
+                    <i class="fas fa-trophy"></i> AI GENIUS CHALLENGE
+                </div>
+                <h1 class="title typing-effect">Azure RAG Engine</h1>
+                <p class="subtitle">// Retrieval Augmented Generation Deployment Status</p>
+            </div>
+
+            <div class="deployment-status">
+                {% if all_configured %}
+                <div class="status-indicator status-success">
+                    <i class="fas fa-check-circle status-icon"></i>
+                    <div>
+                        <div>Deployment Successful</div>
+                        <small style="opacity: 0.7;">All systems operational</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="status-indicator status-error">
+                    <i class="fas fa-exclamation-triangle status-icon"></i>
+                    <div>
+                        <div>Configuration Required</div>
+                        <small style="opacity: 0.7;">Missing environment variables</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="configs-grid">
+                {% for name, config in config_status.items() %}
+                <div class="config-card">
+                    <div class="config-info">
+                        <div class="config-icon 
+                            {% if 'Search' in name %}search-icon
+                            {% elif 'OpenAI' in name %}ai-icon
+                            {% else %}azure-icon{% endif %}">
+                            {% if 'Search' in name %}
+                            <i class="fas fa-search"></i>
+                            {% elif 'OpenAI' in name %}
+                            <i class="fas fa-brain"></i>
+                            {% else %}
+                            <i class="fab fa-microsoft"></i>
+                            {% endif %}
+                        </div>
+                        <div class="config-name">{{ name }}</div>
+                    </div>
+                    <div class="config-status {{ config.class }}">
+                        <div class="status-dot"></div>
+                        {% if config.class == 'success' %}
+                        <span>READY</span>
+                        {% else %}
+                        <span>MISSING</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="action-section">
+                <div class="api-info">
+                    <div>🔧 Azure Search API: <span style="color: var(--glow-blue);">2021-04-30-Preview</span></div>
+                    <div>🤖 Azure OpenAI API: <span style="color: var(--glow-blue);">2023-03-15-preview</span></div>
+                </div>
+
+                {% if all_configured %}
+                <a href="/infer?q=What is this application about?" class="test-button">
+                    <i class="fas fa-rocket"></i>
+                    Launch RAG Test
+                </a>
+                {% else %}
+                <div style="color: var(--text-secondary); font-style: italic;">
+                    <i class="fas fa-info-circle"></i> Complete configuration to enable testing
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Create success fireworks
+        function createFireworks() {
+            const container = document.getElementById('successAnimation');
+            if (!container) return;
+
+            const colors = ['#00ff88', '#00d2ff', '#8b5cf6', '#ffa502', '#ff6b6b'];
+            const fireworkCount = 15;
+
+            for (let i = 0; i < fireworkCount; i++) {
+                setTimeout(() => {
+                    const firework = document.createElement('div');
+                    firework.className = 'firework';
+                    firework.style.left = Math.random() * 100 + '%';
+                    firework.style.top = Math.random() * 100 + '%';
+                    firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    firework.style.boxShadow = `0 0 20px ${colors[Math.floor(Math.random() * colors.length)]}`;
+                    container.appendChild(firework);
+
+                    // Create explosion effect
+                    setTimeout(() => {
+                        for (let j = 0; j < 8; j++) {
+                            const spark = document.createElement('div');
+                            spark.style.position = 'absolute';
+                            spark.style.width = '2px';
+                            spark.style.height = '2px';
+                            spark.style.backgroundColor = firework.style.backgroundColor;
+                            spark.style.left = firework.style.left;
+                            spark.style.top = firework.style.top;
+                            spark.style.borderRadius = '50%';
+
+                            const angle = (j * 45) * Math.PI / 180;
+                            const distance = 50 + Math.random() * 100;
+                            const endX = Math.cos(angle) * distance;
+                            const endY = Math.sin(angle) * distance;
+
+                            spark.style.animation = `sparkle 1s ease-out forwards`;
+                            spark.style.setProperty('--end-x', endX + 'px');
+                            spark.style.setProperty('--end-y', endY + 'px');
+
+                            container.appendChild(spark);
+
+                            setTimeout(() => spark.remove(), 1000);
+                        }
+                        firework.remove();
+                    }, 200);
+                }, i * 200);
+            }
+
+            // Add sparkle animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes sparkle {
+                    0% { 
+                        transform: translate(0, 0) scale(1);
+                        opacity: 1;
+                    }
+                    100% { 
+                        transform: translate(var(--end-x), var(--end-y)) scale(0);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Typing effect for title
+        function startTypingEffect() {
+            const title = document.querySelector('.typing-effect');
+            const text = title.textContent;
+            title.textContent = '';
+            title.classList.remove('typing-effect');
+
+            let i = 0;
+            const typeInterval = setInterval(() => {
+                title.textContent += text[i];
+                i++;
+                if (i >= text.length) {
+                    clearInterval(typeInterval);
+                    title.classList.add('typing-effect');
+                }
+            }, 100);
+        }
+
+        // Animate config cards on load
+        function animateConfigCards() {
+            const cards = document.querySelectorAll('.config-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+        }
+
+        // Initialize animations
+        window.addEventListener('load', () => {
+            createParticles();
+            {% if all_configured %}
+            setTimeout(createFireworks, 1000);
+            {% endif %}
+            setTimeout(startTypingEffect, 500);
+            setTimeout(animateConfigCards, 1200);
+        });
+
+        // Add hover effects to buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            const button = document.querySelector('.test-button');
+            if (button) {
+                button.addEventListener('mouseenter', () => {
+                    button.style.transform = 'translateY(-3px) scale(1.02)';
+                });
+                button.addEventListener('mouseleave', () => {
+                    button.style.transform = 'translateY(-2px) scale(1)';
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
